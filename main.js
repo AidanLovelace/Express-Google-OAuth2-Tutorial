@@ -23,11 +23,10 @@ app.get('/', function (req, res) {
   // Create an OAuth2 client object from the credentials in our config file
   const oauth2Client = new OAuth2(CONFIG.oauth2Credentials.client_id, CONFIG.oauth2Credentials.client_secret, CONFIG.oauth2Credentials.redirect_uris[0]);
 
-  // Obtain the google login link to which we'll send our users to give us access to some data about them
+  // Obtain the google login link to which we'll send our users to give us access
   const loginLink = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: CONFIG.oauth2Credentials.scopes, // Using the access scopes from our config file
-    prompt: 'consent' // Makes sure we get a refresh token
+    access_type: 'offline', // Indicates that we need to be able to access data continously without the user constantly giving us consent
+    scope: CONFIG.oauth2Credentials.scopes // Using the access scopes from our config file
   });
   return res.render("index", { loginLink: loginLink });
 });
@@ -52,21 +51,21 @@ app.get('/auth_callback', function (req, res) {
 });
 
 app.get('/get_some_data', function (req, res) {
-  // Create an OAuth2 client object from the credentials in our config file
-  const oauth2Client = new OAuth2(CONFIG.oauth2Credentials.client_id, CONFIG.oauth2Credentials.client_secret, CONFIG.oauth2Credentials.redirect_uris[0]);
-
   if (!req.cookies.jwt) {
     // We haven't logged in
     return res.redirect('/');
   }
 
+  // Create an OAuth2 client object from the credentials in our config file
+  const oauth2Client = new OAuth2(CONFIG.oauth2Credentials.client_id, CONFIG.oauth2Credentials.client_secret, CONFIG.oauth2Credentials.redirect_uris[0]);
+
   // Add this specific user's credentials to our OAuth2 client
   oauth2Client.credentials = jwt.verify(req.cookies.jwt, CONFIG.JWTsecret);
 
-  // Give us access to the youtube service
+  // Get the youtube service
   const service = google.youtube('v3');
 
-  // Get the first five of the user's subscriptions (the channels they're subscribed to)
+  // Get five of the user's subscriptions (the channels they're subscribed to)
   service.subscriptions.list({
     auth: oauth2Client,
     mine: true,
